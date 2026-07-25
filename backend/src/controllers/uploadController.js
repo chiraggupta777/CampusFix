@@ -20,6 +20,9 @@ const uploadToCloudinary = (fileBuffer, originalName) => {
 
 const uploadImages = async (req, res) => {
   try {
+    console.log('[Upload] Starting image upload...');
+    console.log('[Upload] Files received:', req.files ? req.files.length : 0);
+
     if (!req.files || req.files.length === 0) {
       return res.status(400).json({
         success: false,
@@ -27,11 +30,19 @@ const uploadImages = async (req, res) => {
       });
     }
 
+    console.log('[Upload] Cloudinary config check:', {
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? 'SET' : 'NOT SET',
+      api_key: process.env.CLOUDINARY_API_KEY ? 'SET' : 'NOT SET',
+      api_secret: process.env.CLOUDINARY_API_SECRET ? 'SET' : 'NOT SET',
+    });
+
     const uploadResults = await Promise.all(
       req.files.map((file) => uploadToCloudinary(file.buffer, file.originalname))
     );
 
     const urls = uploadResults.map((result) => result.secure_url);
+
+    console.log('[Upload] Upload successful, URLs:', urls);
 
     return res.status(200).json({
       success: true,
@@ -40,9 +51,13 @@ const uploadImages = async (req, res) => {
       urls,
     });
   } catch (error) {
+    console.error('[Upload] Error details:', error);
+    console.error('[Upload] Error message:', error.message);
+    console.error('[Upload] Error stack:', error.stack);
     return res.status(500).json({
       success: false,
       message: 'Server error while uploading images',
+      error: error.message,
     });
   }
 };

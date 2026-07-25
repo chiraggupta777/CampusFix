@@ -1,6 +1,7 @@
 import Badge from './Badge.jsx';
 
 const statusTone = {
+  Pending: 'blue',
   Open: 'blue',
   'In Review': 'amber',
   Assigned: 'indigo',

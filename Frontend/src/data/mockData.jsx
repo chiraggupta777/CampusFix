@@ -2,13 +2,12 @@
 // In a real build this would be replaced by Supabase queries.
 
 export const categories = [
-  'Electrical',
   'Plumbing',
+  'Electricity',
+  'Internet',
+  'Cleaning',
   'Furniture',
-  'Network',
-  'Cleanliness',
-  'HVAC',
-  'Safety',
+  'Water',
   'Other',
 ];
 
