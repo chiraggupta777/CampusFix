@@ -1,4 +1,4 @@
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useNavigate, Navigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   PlusCircle,
@@ -9,6 +9,7 @@ import {
   X,
 } from 'lucide-react';
 import Logo from '../Logo.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 const items = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -18,6 +19,13 @@ const items = [
 ];
 
 export default function Sidebar({ open, onClose }) {
+  const { logout, token } = useAuth();
+  const navigate = useNavigate();
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <>
       {/* Mobile overlay */}
@@ -77,13 +85,16 @@ export default function Sidebar({ open, onClose }) {
             <Settings className="h-4 w-4" />
             Settings
           </Link>
-          <Link
-            to="/"
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+          <button
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 text-left cursor-pointer"
           >
             <LogOut className="h-4 w-4" />
             Logout
-          </Link>
+          </button>
         </div>
       </aside>
     </>

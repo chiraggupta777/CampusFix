@@ -30,6 +30,36 @@ const getAllIssues = async (req, res) => {
   }
 };
 
+const getIssueById = async (req, res) => {
+  try {
+    const issue = await Issue.findById(req.params.id).populate(populateOptions);
+
+    if (!issue) {
+      return res.status(404).json({
+        success: false,
+        message: 'Issue not found',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      issue,
+    });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({
+        success: false,
+        message: 'Issue not found',
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: 'Server error while fetching issue',
+    });
+  }
+};
+
 const updateIssueStatus = async (req, res) => {
   try {
     const { status, adminRemark } = req.body;
@@ -193,6 +223,7 @@ const getDashboardStats = async (req, res) => {
 
 module.exports = {
   getAllIssues,
+  getIssueById,
   updateIssueStatus,
   getDashboardStats,
 };

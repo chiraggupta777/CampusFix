@@ -1,9 +1,48 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Upload, Sparkles, ImageIcon, X, ArrowLeft, Check, AlertCircle } from "lucide-react";
+import { Upload, ImageIcon, X, ArrowLeft, Check, AlertCircle } from "lucide-react";
 import PageHeader from "../../components/dashboard/PageHeader.jsx";
-import { categories, locations } from "../../data/mockData.jsx";
 import { issueService } from "../../services/issueService.js";
+
+const categories = [
+  {
+    group: "Hostel Facilities",
+    items: [
+      { label: "Plumbing & Sanitation", value: "Plumbing" },
+      { label: "Electricity & Lighting", value: "Electricity" },
+      { label: "Furniture & Fitting", value: "Furniture" },
+      { label: "Cleanliness & Housekeeping", value: "Cleaning" }
+    ]
+  },
+  {
+    group: "Campus Services",
+    items: [
+      { label: "Wi-Fi & Internet", value: "Internet" },
+      { label: "Water Supply", value: "Water" }
+    ]
+  },
+  {
+    group: "Others",
+    items: [
+      { label: "Other Maintenance", value: "Other" }
+    ]
+  }
+];
+
+const locations = [
+  {
+    group: "Hostel Blocks",
+    items: ["Hostel Block A", "Hostel Block B", "Hostel Block C", "Hostel Block D"]
+  },
+  {
+    group: "Academic & Labs",
+    items: ["Main Classroom Block", "CSE Computer Labs", "Library Reading Hall", "University Auditorium"]
+  },
+  {
+    group: "Common Areas",
+    items: ["Cafeteria / Dining Hall", "Sports Complex", "East Gate Parking Lot"]
+  }
+];
 
 const initialForm = {
   category: "",
@@ -53,8 +92,6 @@ function buildTitle(description) {
 export default function ReportIssue() {
   const navigate = useNavigate();
   const [form, setForm] = useState(initialForm);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [suggested, setSuggested] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [toast, setToast] = useState(null);
@@ -80,34 +117,9 @@ export default function ReportIssue() {
     setForm((f) => ({ ...f, image: null, imageFile: null }));
   };
 
-  const analyze = () => {
-    if (!form.description.trim()) return;
-    setAnalyzing(true);
-    setSuggested("");
-    setTimeout(() => {
-      const text = form.description.toLowerCase();
-      let pick = "Other";
-      if (/(light|tube|bulb|fan|electrical|wire|switch|power)/.test(text))
-        pick = "Electricity";
-      else if (/(tap|leak|drain|pipe|toilet|washroom)/.test(text))
-        pick = "Plumbing";
-      else if (/(water|supply|tank)/.test(text)) pick = "Water";
-      else if (/(chair|table|desk|furniture|broken)/.test(text))
-        pick = "Furniture";
-      else if (/(wi-?fi|wifi|network|internet|router)/.test(text))
-        pick = "Internet";
-      else if (/(clean|dust|garbage|waste|dirty)/.test(text))
-        pick = "Cleaning";
-      setSuggested(pick);
-      setForm((f) => ({ ...f, category: pick }));
-      setAnalyzing(false);
-    }, 900);
-  };
-
   const resetForm = () => {
     if (form.image) URL.revokeObjectURL(form.image);
     setForm(initialForm);
-    setSuggested("");
   };
 
   const handleSubmit = async (e) => {
@@ -205,11 +217,15 @@ export default function ReportIssue() {
               className="input"
               disabled={submitting}
             >
-              <option value="">Select a category</option>
-              {categories.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
+              <option value="" disabled>Select a category</option>
+              {categories.map((groupObj) => (
+                <optgroup key={groupObj.group} label={groupObj.group}>
+                  {groupObj.items.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>
@@ -227,51 +243,39 @@ export default function ReportIssue() {
               className="input"
               disabled={submitting}
             >
-              <option value="">Select a location</option>
-              {locations.map((l) => (
-                <option key={l} value={l}>
-                  {l}
-                </option>
+              <option value="" disabled>Select a location</option>
+              {locations.map((groupObj) => (
+                <optgroup key={groupObj.group} label={groupObj.group}>
+                  {groupObj.items.map((l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>
         </div>
 
         <div className="mt-5">
-          <div className="mb-1.5 flex items-center justify-between">
-            <label className="label mb-0" htmlFor="description">
-              Description
-            </label>
-            <button
-              type="button"
-              onClick={analyze}
-              disabled={!form.description.trim() || analyzing || submitting}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-600 hover:text-brand-700 disabled:opacity-50"
-            >
-              <Sparkles
-                className={`h-3.5 w-3.5 ${analyzing ? "animate-pulse" : ""}`}
-              />
-              {analyzing ? "Analyzing…" : "Analyze with AI"}
-            </button>
-          </div>
+          <label className="label" htmlFor="description">
+            Description
+          </label>
           <textarea
             id="description"
             name="description"
             required
             rows={5}
+            maxLength={1000}
             value={form.description}
             onChange={onChange}
-            placeholder="Describe the issue. What happened, where exactly, and since when?"
+            placeholder={"Describe the issue clearly.\nExample: Water leakage in Hostel Block A, 3rd Floor since yesterday."}
             className="input resize-y"
             disabled={submitting}
           />
-          {suggested && !analyzing && (
-            <p className="mt-2 inline-flex items-center gap-1.5 rounded-md bg-brand-50 px-2.5 py-1 text-xs font-medium text-brand-700">
-              <Sparkles className="h-3.5 w-3.5" />
-              Suggested category:{" "}
-              <strong className="font-semibold">{suggested}</strong>
-            </p>
-          )}
+          <div className="mt-1 text-right text-xs text-slate-400">
+            {form.description.length} / 1000 characters
+          </div>
         </div>
 
         <div className="mt-5">
@@ -303,9 +307,9 @@ export default function ReportIssue() {
               </span>
               <div>
                 <p className="text-sm font-semibold text-slate-700">
-                  Click to upload
+                  Click to upload or drag & drop
                 </p>
-                <p className="text-xs text-slate-500">PNG, JPG up to 5MB</p>
+                <p className="text-xs text-slate-500">PNG, JPG or JPEG up to 5MB (Attach a clear photo of the problem)</p>
               </div>
               <input
                 id="image"

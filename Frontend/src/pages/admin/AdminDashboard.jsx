@@ -1,24 +1,84 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PlusCircle, ClipboardList, Clock, CheckCircle2, XCircle, ArrowRight, Bell } from 'lucide-react';
+import { PlusCircle, ClipboardList, Clock, CheckCircle2, XCircle, ArrowRight, Bell, Loader2, LayoutDashboard, Settings } from 'lucide-react';
 import PageHeader from '../../components/dashboard/PageHeader.jsx';
 import { StatusBadge } from '../../components/ui/StatusBadge.jsx';
-import issues from '../../data/adminMockData.jsx';
-
-const stats = [
-  { label: 'Reported', value: issues.length, tone: 'bg-slate-100 text-slate-700', icon: ClipboardList },
-  { label: 'Pending', value: issues.filter((i) => i.status === 'Pending').length, tone: 'bg-amber-100 text-amber-700', icon: Clock },
-  { label: 'Resolved', value: issues.filter((i) => i.status === 'Resolved').length, tone: 'bg-green-100 text-green-700', icon: CheckCircle2 },
-  { label: 'Rejected', value: issues.filter((i) => i.status === 'Rejected').length, tone: 'bg-red-100 text-red-700', icon: XCircle },
-];
+import { issueService } from '../../services/issueService.js';
 
 const actions = [
-  { title: 'Review issues', desc: 'Open the issue list and manage reports.', icon: ClipboardList, to: '/admin/issues', cta: 'Open issues' },
-  { title: 'Notifications', desc: 'See admin alerts and updates.', icon: Bell, to: '/admin/notifications', cta: 'Open' },
-  { title: 'Settings', desc: 'Update admin preferences and controls.', icon: PlusCircle, to: '/admin/settings', cta: 'Open settings' },
+  { title: 'Review Pending Complaints', desc: 'Open the issues log to review, update, and resolve reported complaints.', icon: ClipboardList, to: '/admin/issues', cta: 'Review' },
+  { title: 'Dashboard Summary', desc: 'View high-level metrics, pending trends, and complaint logs.', icon: LayoutDashboard, to: '/admin', cta: 'View' },
+  { title: 'Notifications', desc: 'Check current admin alerts and student update notifications.', icon: Bell, to: '/admin/notifications', cta: 'Check' },
+  { title: 'Administrator Settings', desc: 'Manage system settings, details, and administrator credentials.', icon: Settings, to: '/admin/settings', cta: 'Manage' },
 ];
 
+function formatDate(dateString) {
+  if (!dateString) return '';
+  return new Date(dateString).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function AdminDashboard() {
-  const recent = [...issues].sort((a, b) => new Date(b.reportedDate) - new Date(a.reportedDate)).slice(0, 4);
+  const [statsData, setStatsData] = useState(null);
+  const [recentIssues, setRecentIssues] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const [statsResponse, issuesResponse] = await Promise.all([
+          issueService.getDashboardStats(),
+          issueService.getAdminIssues(),
+        ]);
+
+        setStatsData(statsResponse.data?.stats || null);
+        setRecentIssues((issuesResponse.data?.issues || []).slice(0, 4));
+      } catch (err) {
+        setError(
+          err?.response?.data?.message ||
+            'Failed to load dashboard data. Please try again.'
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-3">
+        <Loader2 className="h-8 w-8 animate-spin text-brand-600" />
+        <p className="text-sm text-slate-500 font-medium">Loading dashboard stats...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="mx-auto max-w-lg mt-12 text-center">
+        <div className="card border-red-200 bg-red-50 p-6 rounded-xl">
+          <p className="text-sm font-semibold text-red-700">Error Loading Dashboard</p>
+          <p className="mt-2 text-xs text-red-600 leading-relaxed">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const statsList = [
+    { label: 'Total Complaints', value: statsData?.totalIssues || 0, tone: 'bg-slate-100 text-slate-700', icon: ClipboardList },
+    { label: 'Pending', value: statsData?.pendingIssues || 0, tone: 'bg-amber-100 text-amber-700', icon: Clock },
+    { label: 'In Progress', value: statsData?.inProgressIssues || 0, tone: 'bg-blue-100 text-blue-700', icon: Clock },
+    { label: 'Resolved', value: statsData?.resolvedIssues || 0, tone: 'bg-green-100 text-green-700', icon: CheckCircle2 },
+    { label: 'Rejected', value: statsData?.rejectedIssues || 0, tone: 'bg-red-100 text-red-700', icon: XCircle },
+  ];
 
   return (
     <div>
@@ -33,8 +93,8 @@ export default function AdminDashboard() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {stats.map((stat) => (
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        {statsList.map((stat) => (
           <div key={stat.label} className="card p-5">
             <div className="flex items-center justify-between">
               <span className={`inline-flex h-9 w-9 items-center justify-center rounded-lg ${stat.tone}`}>
@@ -60,30 +120,35 @@ export default function AdminDashboard() {
             </Link>
           </div>
           <div className="divide-y divide-slate-100">
-            {recent.map((issue) => (
-              <Link
-                key={issue.id}
-                to={`/admin/issues/${issue.id}`}
-                className="flex items-center justify-between gap-4 px-5 py-3.5 hover:bg-slate-50"
-              >
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-900">{issue.title}</p>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    {issue.id} · {issue.category} · {issue.department}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="hidden text-xs text-slate-500 sm:block">{issue.reportedDate}</span>
-                  <StatusBadge status={issue.status} />
-                </div>
-              </Link>
-            ))}
+            {recentIssues.length === 0 ? (
+              <div className="px-5 py-8 text-center text-sm text-slate-500">
+                No recent issues found.
+              </div>
+            ) : (
+              recentIssues.map((issue) => (
+                <Link
+                  key={issue._id}
+                  to={`/admin/issues/${issue._id}`}
+                  className="flex items-center justify-between gap-4 px-5 py-3.5 hover:bg-slate-50"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">{issue.title}</p>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {issue._id.slice(-8).toUpperCase()} · {issue.category} · {issue.location || 'Facilities'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="hidden text-xs text-slate-500 sm:block">{formatDate(issue.createdAt)}</span>
+                    <StatusBadge status={issue.status} />
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </div>
 
         <div className="card">
           <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-4">
-            <Bell className="h-4 w-4 text-brand-600" />
             <h2 className="text-sm font-semibold text-slate-900">Quick Actions</h2>
           </div>
           <div className="divide-y divide-slate-100">
@@ -93,11 +158,16 @@ export default function AdminDashboard() {
                 to={action.to}
                 className="flex items-center justify-between gap-4 px-5 py-4 hover:bg-slate-50"
               >
-                <div>
-                  <p className="text-sm font-semibold text-slate-900">{action.title}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-600">{action.desc}</p>
+                <div className="flex items-start gap-3 min-w-0">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-600 shrink-0 mt-0.5">
+                    <action.icon className="h-4 w-4" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-slate-900 truncate">{action.title}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-slate-500">{action.desc}</p>
+                  </div>
                 </div>
-                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-1 text-xs font-semibold text-slate-600 transition hover:bg-slate-100">
+                <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 px-2 py-1 text-[11px] font-semibold text-slate-600 shrink-0 hover:bg-slate-100 transition">
                   {action.cta}
                   <ArrowRight className="h-3.5 w-3.5" />
                 </span>

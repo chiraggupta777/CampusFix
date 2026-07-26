@@ -1,4 +1,4 @@
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useNavigate, Navigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   ListChecks,
@@ -8,6 +8,7 @@ import {
   X,
 } from 'lucide-react';
 import Logo from '../Logo.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 const items = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -16,6 +17,13 @@ const items = [
 ];
 
 export default function AdminSidebar({ open, onClose }) {
+  const { logout, token, user } = useAuth();
+  const navigate = useNavigate();
+
+  if (!token || user?.role !== 'admin') {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <>
       {open && <div className="fixed inset-0 z-30 bg-slate-900/30 lg:hidden" onClick={onClose} aria-hidden />}
@@ -66,13 +74,16 @@ export default function AdminSidebar({ open, onClose }) {
             <Settings className="h-4 w-4" />
             Settings
           </Link>
-          <Link
-            to="/"
-            className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+          <button
+            onClick={() => {
+              logout();
+              navigate('/login');
+            }}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 text-left cursor-pointer"
           >
             <LogOut className="h-4 w-4" />
             Logout
-          </Link>
+          </button>
         </div>
       </aside>
     </>

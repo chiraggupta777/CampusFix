@@ -7,6 +7,14 @@ export const issueService = {
 
   getIssueById: (id) => api.get(`/issues/${id}`),
 
+  getAdminIssues: () => api.get("/admin/issues"),
+
+  getAdminIssueById: (id) => api.get(`/admin/issues/${id}`),
+
+  getDashboardStats: () => api.get("/admin/dashboard"),
+
+  updateAdminIssueStatus: (id, payload) => api.patch(`/admin/issues/${id}/status`, payload),
+
   uploadImages: (files) => {
     const formData = new FormData();
     files.forEach((file) => formData.append("images", file));

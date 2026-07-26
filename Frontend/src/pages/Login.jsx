@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Check, ArrowRight } from "lucide-react";
 import AuthShell from "../components/AuthShell.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+
+const ALLOWED_DOMAIN = "bbdu.ac.in";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -10,6 +12,7 @@ export default function Login() {
   const [show, setShow] = useState(false);
   const [form, setForm] = useState({ email: "", password: "" });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -21,29 +24,39 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess("");
+
+    const emailDomain = form.email.split('@')[1];
+    if (!emailDomain || emailDomain.toLowerCase() !== ALLOWED_DOMAIN.toLowerCase()) {
+      setError(`Only logins with @${ALLOWED_DOMAIN} email addresses are allowed.`);
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await login(form);
       const userRole = response?.data?.user?.role;
 
-      if (userRole === "admin") {
-        navigate("/admin");
-      } else {
-        navigate("/dashboard");
-      }
+      setSuccess("Login successful! Redirecting...");
+      setTimeout(() => {
+        if (userRole === "admin") {
+          navigate("/admin");
+        } else {
+          navigate("/dashboard");
+        }
+      }, 1500);
     } catch (err) {
       setError(
         err?.response?.data?.message || "Login failed. Please try again.",
       );
-    } finally {
       setLoading(false);
     }
   };
 
   return (
     <AuthShell
-      title="Welcome back"
-      subtitle="Login to report and track your campus issues."
+      title="Login to CampusFix"
+      subtitle="Login with your university email to report and track campus issues."
       footer={
         <>
           New to CampusFix?{" "}
@@ -57,9 +70,16 @@ export default function Login() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {success && (
+          <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 font-medium animate-pulse">
+            <Check className="h-4 w-4 shrink-0" />
+            <span>{success}</span>
+          </div>
+        )}
+
         <div>
           <label className="label" htmlFor="email">
-            Email
+            University email
           </label>
           <div className="relative">
             <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -70,8 +90,9 @@ export default function Login() {
               required
               value={form.email}
               onChange={handleChange}
-              placeholder="you@university.edu"
+              placeholder="e.g. chirag.gupta23@bbdu.ac.in"
               className="input pl-9"
+              disabled={loading || !!success}
             />
           </div>
         </div>
@@ -97,14 +118,16 @@ export default function Login() {
               required
               value={form.password}
               onChange={handleChange}
-              placeholder="••••••••"
+              placeholder="Minimum 8 characters"
               className="input pl-9 pr-9"
+              disabled={loading || !!success}
             />
             <button
               type="button"
               onClick={() => setShow((v) => !v)}
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-slate-400 hover:text-slate-600"
               aria-label={show ? "Hide password" : "Show password"}
+              disabled={loading || !!success}
             >
               {show ? (
                 <EyeOff className="h-4 w-4" />
@@ -121,7 +144,7 @@ export default function Login() {
           </p>
         )}
 
-        <button type="submit" className="btn-primary w-full" disabled={loading}>
+        <button type="submit" className="btn-primary w-full" disabled={loading || !!success}>
           {loading ? "Logging in..." : "Login"}
           <ArrowRight className="h-4 w-4" />
         </button>

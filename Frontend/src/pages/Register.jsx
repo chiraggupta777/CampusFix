@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { User, Mail, Lock, GraduationCap, ArrowRight } from "lucide-react";
+import { User, Mail, Lock, Check, ArrowRight } from "lucide-react";
 import AuthShell from "../components/AuthShell.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+
+const ALLOWED_DOMAIN = "bbdu.ac.in";
 
 export default function Register() {
   const navigate = useNavigate();
   const { register } = useAuth();
-  const [role, setRole] = useState("Student");
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -16,10 +17,18 @@ export default function Register() {
     roomNumber: "",
   });
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    let value = e.target.value;
+    if (e.target.name === "roomNumber") {
+      value = value.replace(/\D/g, "");
+    }
+    if (e.target.name === "hostelBlock") {
+      value = value.toUpperCase();
+    }
+    setForm((prev) => ({ ...prev, [e.target.name]: value }));
     if (error) setError("");
   };
 
@@ -27,6 +36,20 @@ export default function Register() {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess("");
+
+    const emailDomain = form.email.split('@')[1];
+    if (!emailDomain || emailDomain.toLowerCase() !== ALLOWED_DOMAIN.toLowerCase()) {
+      setError(`Only registrations with @${ALLOWED_DOMAIN} email addresses are allowed.`);
+      setLoading(false);
+      return;
+    }
+
+    if (form.password.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      setLoading(false);
+      return;
+    }
 
     try {
       await register({
@@ -36,21 +59,23 @@ export default function Register() {
         hostelBlock: form.hostelBlock,
         roomNumber: form.roomNumber,
       });
-      navigate("/login");
+      setSuccess("Account created successfully! Redirecting to login...");
+      setTimeout(() => {
+        navigate("/login");
+      }, 2000);
     } catch (err) {
       setError(
         err?.response?.data?.message ||
           "Registration failed. Please try again.",
       );
-    } finally {
       setLoading(false);
     }
   };
 
   return (
     <AuthShell
-      title="Create your account"
-      subtitle="Join CampusFix to report and track campus issues."
+      title="Create Student Account"
+      subtitle="Register with your university email to report and track campus issues."
       footer={
         <>
           Already have an account?{" "}
@@ -64,6 +89,13 @@ export default function Register() {
       }
     >
       <form onSubmit={handleSubmit} className="space-y-4">
+        {success && (
+          <div className="flex items-center gap-2 rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700 font-medium animate-pulse">
+            <Check className="h-4 w-4 shrink-0" />
+            <span>{success}</span>
+          </div>
+        )}
+
         <div>
           <label className="label" htmlFor="name">
             Full name
@@ -77,8 +109,9 @@ export default function Register() {
               required
               value={form.name}
               onChange={handleChange}
-              placeholder="Priya Sharma"
+              placeholder="e.g. Chirag Gupta"
               className="input pl-9"
+              disabled={loading || !!success}
             />
           </div>
         </div>
@@ -96,30 +129,10 @@ export default function Register() {
               required
               value={form.email}
               onChange={handleChange}
-              placeholder="you@university.edu"
+              placeholder="e.g. chirag.gupta23@bbdu.ac.in"
               className="input pl-9"
+              disabled={loading || !!success}
             />
-          </div>
-        </div>
-
-        <div>
-          <label className="label">Role</label>
-          <div className="grid grid-cols-2 gap-2">
-            {["Student", "Admin"].map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={() => setRole(r)}
-                className={`flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-medium transition ${
-                  role === r
-                    ? "border-brand-500 bg-brand-50 text-brand-700"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                }`}
-              >
-                <GraduationCap className="h-3.5 w-3.5" />
-                {r}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -137,6 +150,7 @@ export default function Register() {
               onChange={handleChange}
               placeholder="A"
               className="input"
+              disabled={loading || !!success}
             />
           </div>
           <div>
@@ -152,6 +166,7 @@ export default function Register() {
               onChange={handleChange}
               placeholder="101"
               className="input"
+              disabled={loading || !!success}
             />
           </div>
         </div>
@@ -169,8 +184,9 @@ export default function Register() {
               required
               value={form.password}
               onChange={handleChange}
-              placeholder="Create a password"
+              placeholder="Minimum 8 characters"
               className="input pl-9"
+              disabled={loading || !!success}
             />
           </div>
         </div>
@@ -180,6 +196,7 @@ export default function Register() {
             type="checkbox"
             required
             className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-500 focus:ring-brand-500"
+            disabled={loading || !!success}
           />
           <span>
             I agree to the{" "}
@@ -206,7 +223,7 @@ export default function Register() {
           </p>
         )}
 
-        <button type="submit" className="btn-primary w-full" disabled={loading}>
+        <button type="submit" className="btn-primary w-full" disabled={loading || !!success}>
           {loading ? "Creating account..." : "Create account"}
           <ArrowRight className="h-4 w-4" />
         </button>

@@ -300,26 +300,9 @@ export default function IssueDetails() {
               ))}
             </div>
 
-            <form onSubmit={addComment} className="mt-5 flex items-start gap-3 border-t border-slate-100 pt-4">
-              <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
-                {getInitials(user?.name || 'Student')}
-              </span>
-              <div className="flex-1">
-                <textarea
-                  value={comment}
-                  onChange={(e) => setComment(e.target.value)}
-                  rows={2}
-                  placeholder="Add a comment…"
-                  className="input resize-y"
-                />
-                <div className="mt-2 flex justify-end">
-                  <button type="submit" disabled={!comment.trim()} className="btn-primary">
-                    <Send className="h-4 w-4" />
-                    Comment
-                  </button>
-                </div>
-              </div>
-            </form>
+            <div className="mt-5 flex items-center justify-center border-t border-slate-100 pt-6 pb-2 text-sm text-slate-500 font-medium bg-slate-50/50 rounded-lg py-4">
+              Comments will be available in a future update.
+            </div>
           </div>
         </div>
 
@@ -377,8 +360,9 @@ export default function IssueDetails() {
               You can withdraw this issue if it was reported by mistake.
             </p>
             <button
-              onClick={() => navigate('/dashboard/my-issues')}
-              className="btn-secondary mt-4 w-full"
+              className="btn-secondary mt-4 w-full opacity-50 cursor-not-allowed"
+              disabled
+              title="Withdraw feature is not available."
             >
               Withdraw Issue
             </button>

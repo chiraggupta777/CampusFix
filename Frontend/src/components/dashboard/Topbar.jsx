@@ -1,6 +1,24 @@
 import { Search, Bell, Menu } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext.jsx';
+
+function getInitials(name) {
+  if (!name) return 'U';
+  return name
+    .split(' ')
+    .map((part) => part[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export default function Topbar({ onMenu }) {
+  const { user } = useAuth();
+  const displayRole = user?.role === 'admin' 
+    ? 'Administrator' 
+    : user?.role === 'student' 
+      ? 'Student' 
+      : (user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : 'User');
+
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between gap-4 border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6">
       <div className="flex flex-1 items-center gap-3">
@@ -32,11 +50,11 @@ export default function Topbar({ onMenu }) {
         </button>
         <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5">
           <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
-            PS
+            {getInitials(user?.name)}
           </span>
           <div className="hidden sm:block">
-            <p className="text-xs font-semibold leading-tight text-slate-900">Priya Sharma</p>
-            <p className="text-[11px] leading-tight text-slate-500">Student · CSE</p>
+            <p className="text-xs font-semibold leading-tight text-slate-900">{user?.name || 'User'}</p>
+            <p className="text-[11px] leading-tight text-slate-500">{displayRole}</p>
           </div>
         </div>
       </div>
