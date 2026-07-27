@@ -312,7 +312,7 @@ npm run dev
 
 ### Backend API
 
-> =https://campusfix-1-6saz.onrender.com
+> https://campusfix-1-6saz.onrender.com
 
 ---
 
